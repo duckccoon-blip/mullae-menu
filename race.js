@@ -20,6 +20,13 @@
   const SS = (() => { try { return window.sessionStorage; } catch (e) { return null; } })();
   const LS = (() => { try { return window.localStorage; } catch (e) { return null; } })();
 
+  // 실시간 연결 라이브러리 (이 게임을 열 때만 불러옴)
+  if (typeof mqtt === "undefined") {
+    const lib = document.createElement("script");
+    lib.src = "https://cdn.jsdelivr.net/npm/mqtt@5/dist/mqtt.min.js";
+    document.head.appendChild(lib);
+  }
+
   // ---------- 스타일 ----------
   const css = `
   .sn-wrap{padding:28px 20px 40px}
@@ -137,7 +144,7 @@
 
   // ---------- 연결 ----------
   function connect(opts, onReady) {
-    if (typeof mqtt === "undefined") { showEntry("게임 서버를 불러오지 못했어요. 새로고침해 주세요"); return false; }
+    if (typeof mqtt === "undefined") { showEntry("게임 서버 연결 준비 중이에요. 잠시 후 다시 눌러주세요"); return false; }
     client = mqtt.connect(BROKER, {
       clientId: "mh_" + uid(), clean: true, keepalive: 20,
       connectTimeout: 8000, reconnectPeriod: 2000, ...opts,
@@ -476,5 +483,5 @@
   }
 
   window.addEventListener("pagehide", () => { if (client) leave(); });
-  window.SnailRace = { mount, unmount };
+  (window.GameModules = window.GameModules || {}).race = { mount, unmount };
 })();

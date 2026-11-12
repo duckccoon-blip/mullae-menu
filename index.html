@@ -44,6 +44,13 @@
   .guide-block p{color:var(--sub);font-size:15px;white-space:pre-line}
   .to-menu{display:block;text-align:center;background:var(--point);color:var(--bg);padding:16px;border-radius:14px;text-decoration:none;font-weight:700;margin:0 20px 48px}
 
+  /* 미니게임 목록 */
+  .games{padding:20px}
+  .games .big-btn{justify-content:flex-start;gap:14px}
+  .game-emoji{font-size:32px;line-height:1}
+  .game-text{flex:1}
+  .game-loading{padding:60px 20px;text-align:center;color:var(--sub)}
+
   /* 메뉴판 */
   nav{display:flex;gap:8px;overflow-x:auto;padding:0 20px 12px;scrollbar-width:none}
   nav::-webkit-scrollbar{display:none}
@@ -66,8 +73,6 @@
 </head>
 <body>
 <div id="app"></div>
-<script src="https://cdn.jsdelivr.net/npm/mqtt@5/dist/mqtt.min.js"></script>
-<script src="race.js"></script>
 
 <script>
 // =====================================================
@@ -81,7 +86,7 @@ const STORE = {
   intro: "혼자여도 괜찮은 밤,\n위스키 한 잔과 대화가 있는 바",
   firstBtn: ["첫 방문이신가요?", "문래한잔 이용 안내"],
   menuBtn: ["메뉴판은 여기!", "오늘은 뭐 마실까?"],
-  gameBtn: ["달팽이 경주 🐌", "옆 손님과 한 판! 1등은 완전 랜덤"],
+  gameBtn: ["미니게임 🎮", "옆 손님과 한 판, 메뉴 뽑기까지"],
   info: [
     ["영업시간", "매일 20:00 – 00:00"],
     ["Wi-Fi", "mullae_guest / 12345678"],
@@ -137,6 +142,13 @@ const MENU = [
   },
 ];
 
+// ④ 미니게임 목록 (위에서부터 순서대로 보여요)
+//    빼고 싶으면 그 줄을 지우고, 새 게임은 파일을 올린 뒤 한 줄 추가
+const GAMES = [
+  { id: "race", file: "race.js", emoji: "🐌", title: "달팽이 경주", desc: "옆 손님과 한 판! 1등은 완전 랜덤" },
+  { id: "pick", file: "pick.js", emoji: "🎰", title: "메뉴 랜덤뽑기", desc: "고민될 땐 운에 맡겨보세요" },
+];
+
 // =====================================================
 // 아래는 건드리지 않아도 됩니다
 // =====================================================
@@ -145,9 +157,9 @@ const app = document.getElementById("app");
 const won = p => typeof p === "number" ? p.toLocaleString("ko-KR") + "원" : (p || "");
 let observer;
 
-const topbar = (title, extra = "") => `
+const topbar = (title, extra = "", back = "#home") => `
   <div class="topbar">
-    <div class="topbar-row"><a class="back" href="#home">←</a><span class="topbar-title">${title}</span></div>
+    <div class="topbar-row"><a class="back" href="${back}">←</a><span class="topbar-title">${title}</span></div>
     ${extra}
   </div>`;
 
@@ -165,7 +177,7 @@ const views = {
       <a class="big-btn primary" href="#menu">
         <span><b>${STORE.menuBtn[0]}</b><small>${STORE.menuBtn[1]}</small></span><i>→</i>
       </a>
-      <a class="big-btn" href="#race">
+      <a class="big-btn" href="#games">
         <span><b>${STORE.gameBtn[0]}</b><small>${STORE.gameBtn[1]}</small></span><i>→</i>
       </a>
       <div class="info">
@@ -186,7 +198,15 @@ const views = {
     </div>
     <a class="to-menu" href="#menu">메뉴판 보러가기 →</a>`,
 
-  race: () => `${topbar("달팽이 경주")}<div id="race-root"></div>`,
+  games: () => `
+    ${topbar("미니게임")}
+    <div class="games">
+      ${GAMES.map(g => `
+        <a class="big-btn" href="#g-${g.id}">
+          <span class="game-emoji">${g.emoji}</span>
+          <span class="game-text"><b>${g.title}</b><small>${g.desc}</small></span><i>→</i>
+        </a>`).join("")}
+    </div>`,
 
   menu: () => `
     ${topbar("메뉴판", `<nav>${MENU.map((c, i) => `<button data-i="${i}">${c.category}</button>`).join("")}</nav>`)}
@@ -227,20 +247,46 @@ function setupMenuNav() {
   document.querySelectorAll("section").forEach(s => observer.observe(s));
 }
 
-let currentView = "";
+const loadedScripts = {};
+function loadScript(src) {
+  return loadedScripts[src] || (loadedScripts[src] = new Promise((ok, fail) => {
+    const el = document.createElement("script");
+    el.src = src + "?v=" + Date.now().toString().slice(0, 7);
+    el.onload = ok;
+    el.onerror = () => { delete loadedScripts[src]; fail(); };
+    document.head.appendChild(el);
+  }));
+}
+
+let currentGame = null;
+async function mountGame(g) {
+  const el = document.getElementById("game-root");
+  el.innerHTML = `<p class="game-loading">${g.emoji} 불러오는 중…</p>`;
+  try { await loadScript(g.file); } catch (e) {
+    el.innerHTML = `<p class="game-loading">게임을 불러오지 못했어요. 새로고침해 주세요</p>`; return;
+  }
+  const mod = window.GameModules && window.GameModules[g.id];
+  if (currentGame !== g.id || !mod) return;
+  mod.mount(el, { STORE, MENU, won });
+}
+
 function route() {
   const key = location.hash.slice(1);
-  const view = views[key] ? key : "home";
+  let view = views[key] ? key : "home";
+  const game = key.startsWith("g-") ? GAMES.find(g => g.id === key.slice(2)) : null;
+  if (game) view = "game";
+
   if (observer) observer.disconnect();
-  if (currentView === "race" && window.SnailRace) SnailRace.unmount();
-  currentView = view;
-  app.innerHTML = views[view]();
+  if (currentGame && window.GameModules && window.GameModules[currentGame]) window.GameModules[currentGame].unmount();
+  currentGame = null;
+
+  app.innerHTML = game
+    ? `${topbar(game.title, "", "#games")}<div id="game-root"></div>`
+    : views[view]();
   window.scrollTo(0, 0);
+
   if (view === "menu") setupMenuNav();
-  if (view === "race") {
-    if (window.SnailRace) SnailRace.mount(document.getElementById("race-root"));
-    else document.getElementById("race-root").innerHTML = '<p style="padding:40px 20px;text-align:center;color:var(--sub)">게임을 불러오지 못했어요. 새로고침해 주세요</p>';
-  }
+  if (game) { currentGame = game.id; mountGame(game); }
 }
 
 window.addEventListener("hashchange", route);

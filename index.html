@@ -66,6 +66,8 @@
 </head>
 <body>
 <div id="app"></div>
+<script src="https://cdn.jsdelivr.net/npm/mqtt@5/dist/mqtt.min.js"></script>
+<script src="race.js"></script>
 
 <script>
 // =====================================================
@@ -79,6 +81,7 @@ const STORE = {
   intro: "혼자여도 괜찮은 밤,\n위스키 한 잔과 대화가 있는 바",
   firstBtn: ["첫 방문이신가요?", "문래한잔 이용 안내"],
   menuBtn: ["메뉴판은 여기!", "오늘은 뭐 마실까?"],
+  gameBtn: ["달팽이 경주 🐌", "옆 손님과 한 판! 1등은 완전 랜덤"],
   info: [
     ["영업시간", "매일 20:00 – 00:00"],
     ["Wi-Fi", "mullae_guest / 12345678"],
@@ -162,6 +165,9 @@ const views = {
       <a class="big-btn primary" href="#menu">
         <span><b>${STORE.menuBtn[0]}</b><small>${STORE.menuBtn[1]}</small></span><i>→</i>
       </a>
+      <a class="big-btn" href="#race">
+        <span><b>${STORE.gameBtn[0]}</b><small>${STORE.gameBtn[1]}</small></span><i>→</i>
+      </a>
       <div class="info">
         ${STORE.info.map(([k, v]) => `<div class="info-row"><span>${k}</span><span>${v}</span></div>`).join("")}
         <div class="links">${STORE.links.map(([t, u]) => `<a href="${u}" target="_blank">${t}</a>`).join("")}</div>
@@ -179,6 +185,8 @@ const views = {
         </div>`).join("")}
     </div>
     <a class="to-menu" href="#menu">메뉴판 보러가기 →</a>`,
+
+  race: () => `${topbar("달팽이 경주")}<div id="race-root"></div>`,
 
   menu: () => `
     ${topbar("메뉴판", `<nav>${MENU.map((c, i) => `<button data-i="${i}">${c.category}</button>`).join("")}</nav>`)}
@@ -219,13 +227,20 @@ function setupMenuNav() {
   document.querySelectorAll("section").forEach(s => observer.observe(s));
 }
 
+let currentView = "";
 function route() {
   const key = location.hash.slice(1);
   const view = views[key] ? key : "home";
   if (observer) observer.disconnect();
+  if (currentView === "race" && window.SnailRace) SnailRace.unmount();
+  currentView = view;
   app.innerHTML = views[view]();
   window.scrollTo(0, 0);
   if (view === "menu") setupMenuNav();
+  if (view === "race") {
+    if (window.SnailRace) SnailRace.mount(document.getElementById("race-root"));
+    else document.getElementById("race-root").innerHTML = '<p style="padding:40px 20px;text-align:center;color:var(--sub)">게임을 불러오지 못했어요. 새로고침해 주세요</p>';
+  }
 }
 
 window.addEventListener("hashchange", route);

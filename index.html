@@ -251,7 +251,7 @@ const loadedScripts = {};
 function loadScript(src) {
   return loadedScripts[src] || (loadedScripts[src] = new Promise((ok, fail) => {
     const el = document.createElement("script");
-    el.src = src + "?v=" + Date.now().toString().slice(0, 7);
+    el.src = src + "?v=" + Date.now().toString().slice(0, 8);
     el.onload = ok;
     el.onerror = () => { delete loadedScripts[src]; fail(); };
     document.head.appendChild(el);

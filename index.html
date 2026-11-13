@@ -27,6 +27,13 @@
   .info{margin-top:28px;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px}
   .info-row{display:flex;justify-content:space-between;gap:12px;font-size:14px;padding:6px 0}
   .info-row span:first-child{color:var(--sub)}
+  .wifi{border-top:1px solid var(--line);margin-top:6px;padding-top:10px}
+  .wifi-row{display:flex;align-items:center;gap:10px;font-size:14px;padding:5px 0}
+  .wifi-row .k{color:var(--sub);width:58px;flex-shrink:0}
+  .wifi-row .v{flex:1;min-width:0;word-break:break-all;user-select:all;-webkit-user-select:all}
+  .wifi-row .v.pw{font-family:ui-monospace,Menlo,monospace;font-size:16px;letter-spacing:.04em;color:var(--point)}
+  .copy-btn{flex-shrink:0;background:var(--point);color:var(--bg);border:0;border-radius:8px;padding:7px 12px;font-size:13px;font-weight:700;font-family:inherit;cursor:pointer}
+  .copy-btn.done{background:var(--line);color:var(--text)}
   .links{display:flex;gap:8px;margin-top:12px}
   .links a{flex:1;text-align:center;padding:10px;border-radius:10px;background:var(--line);color:var(--text);text-decoration:none;font-size:13px}
 
@@ -89,8 +96,9 @@ const STORE = {
   gameBtn: ["미니게임 🎮", "옆 손님과 한 판, 메뉴 뽑기까지"],
   info: [
     ["영업시간", "20:00 – 04:00"],
-    ["Wi-Fi", "U+NetDC8C_5G / 4688E#2H15"],
   ],
+  // Wi-Fi: 이름·비밀번호를 따로 적어요 (손님이 [복사] 버튼으로 비밀번호를 복사할 수 있어요)
+  wifi: { name: "U+NetDC8C_5G", password: "4688E#2H15" },
   links: [
     ["인스타그램", "https://www.instagram.com/m.hanjan_sungshin/"],
     ["네이버 리뷰", "https://naver.me/5MvIFhOp"],
@@ -182,6 +190,12 @@ const views = {
       </a>
       <div class="info">
         ${STORE.info.map(([k, v]) => `<div class="info-row"><span>${k}</span><span>${v}</span></div>`).join("")}
+        ${STORE.wifi ? `
+        <div class="wifi">
+          <div class="wifi-row"><span class="k">Wi-Fi</span><span class="v">${STORE.wifi.name}</span></div>
+          <div class="wifi-row"><span class="k">비밀번호</span><span class="v pw">${STORE.wifi.password}</span>
+            <button class="copy-btn" data-copy="${STORE.wifi.password}">복사</button></div>
+        </div>` : ""}
         <div class="links">${STORE.links.map(([t, u]) => `<a href="${u}" target="_blank">${t}</a>`).join("")}</div>
       </div>
     </div>`,
@@ -288,6 +302,41 @@ function route() {
   if (view === "menu") setupMenuNav();
   if (game) { currentGame = game.id; mountGame(game); }
 }
+
+// 복사 버튼 (와이파이 비밀번호 등)
+function copyText(text) {
+  if (navigator.clipboard && window.isSecureContext) {
+    return navigator.clipboard.writeText(text).catch(() => fallbackCopy(text));
+  }
+  return Promise.resolve(fallbackCopy(text));
+}
+function fallbackCopy(text) {
+  // 네이버·카카오톡 앱 안 브라우저 등 clipboard API가 막힌 곳 대비
+  const ta = document.createElement("textarea");
+  ta.value = text; ta.setAttribute("readonly", "");
+  ta.style.cssText = "position:fixed;top:0;left:0;opacity:0";
+  document.body.appendChild(ta);
+  ta.select(); ta.setSelectionRange(0, text.length);
+  let ok = false; try { ok = document.execCommand("copy"); } catch (e) {}
+  ta.remove();
+  if (!ok) throw new Error("copy failed");
+}
+document.addEventListener("click", async e => {
+  const btn = e.target.closest(".copy-btn");
+  if (!btn) return;
+  try {
+    await copyText(btn.dataset.copy);
+    btn.textContent = "복사됨 ✓"; btn.classList.add("done");
+  } catch (err) {
+    // 복사가 안 되는 환경이면 비밀번호를 선택해 둬서 길게 눌러 복사할 수 있게
+    const v = btn.parentElement.querySelector(".v");
+    const r = document.createRange(); r.selectNodeContents(v);
+    const sel = getSelection(); sel.removeAllRanges(); sel.addRange(r);
+    btn.textContent = "길게 눌러 복사";
+  }
+  clearTimeout(btn._t);
+  btn._t = setTimeout(() => { btn.textContent = "복사"; btn.classList.remove("done"); }, 2000);
+});
 
 window.addEventListener("hashchange", route);
 route();

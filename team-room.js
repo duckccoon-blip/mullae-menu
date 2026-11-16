@@ -196,7 +196,7 @@
           <p class="tr-sub">${esc(game.sub)}</p>
           <p class="tr-msg" id="tr-msg">${esc(msg)}</p>
           <label class="tr-label" for="tr-name">닉네임</label>
-          <input id="tr-name" class="tr-input" maxlength="6" placeholder="예: 태윤" value="${esc(me.name)}">
+          <input id="tr-name" class="tr-input" maxlength="6" placeholder="예: 장원영" value="${esc(me.name)}">
           <button id="tr-create" class="tr-btn primary">방 만들기</button>
           <div class="tr-or">또는 방 번호로 참가</div>
           <div class="tr-row">

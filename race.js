@@ -114,7 +114,7 @@
         <p class="sn-sub">매장 손님끼리 함께! 1등은 완전 랜덤이에요</p>
         <p class="sn-msg" id="sn-msg">${esc(msg)}</p>
         <label class="sn-label" for="sn-name">닉네임</label>
-        <input id="sn-name" class="sn-input" maxlength="8" placeholder="예: 혼술러" value="${esc(me.name)}">
+        <input id="sn-name" class="sn-input" maxlength="8" placeholder="예: 장원영" value="${esc(me.name)}">
         <button id="sn-create" class="sn-btn primary">방 만들기</button>
         <div class="sn-or">또는 방 번호로 참가</div>
         <div class="sn-row">

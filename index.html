@@ -94,6 +94,7 @@ const STORE = {
   firstBtn: ["첫 방문이신가요?", "문래한잔 이용 안내"],
   menuBtn: ["메뉴판은 여기!", "오늘은 뭐 마실까?"],
   gameBtn: ["미니게임 🎮", "옆 손님과 한 판, 메뉴 뽑기까지"],
+  // petBtn: ["내 캐릭터 🐣", "주문하면 귀여운 친구를 분양해 드려요"],
   info: [
     ["영업시간", "20:00 – 04:00"],
   ],
@@ -190,6 +191,9 @@ const views = {
       <a class="big-btn" href="#games">
         <span><b>${STORE.gameBtn[0]}</b><small>${STORE.gameBtn[1]}</small></span><i>→</i>
       </a>
+      ${STORE.petBtn ? `<a class="big-btn" href="#pet">
+        <span><b>${STORE.petBtn[0]}</b><small>${STORE.petBtn[1]}</small></span><i>→</i>
+      </a>` : ""}
       <div class="info">
         ${STORE.info.map(([k, v]) => `<div class="info-row"><span>${k}</span><span>${v}</span></div>`).join("")}
         ${STORE.wifi ? `
@@ -263,6 +267,14 @@ function setupMenuNav() {
   document.querySelectorAll("section").forEach(s => observer.observe(s));
 }
 
+// 캐릭터 키우기 화면들 (pet.js 하나로 3가지 화면)
+//   #pet = 손님, #staff = 직원(분양·부활 QR), #tablet = 매장 태블릿(밥 QR)
+const PAGES = {
+  pet: { id: "pet", file: "pet.js", emoji: "🐣", title: "내 캐릭터" },
+  staff: { id: "pet", file: "pet.js", emoji: "🧑‍🍳", title: "직원용 · 분양/부활 QR" },
+  tablet: { id: "pet", file: "pet.js", emoji: "🍚", title: "매장 밥 QR" },
+};
+
 const loadedScripts = {};
 function loadScript(src) {
   return loadedScripts[src] || (loadedScripts[src] = new Promise((ok, fail) => {
@@ -275,7 +287,7 @@ function loadScript(src) {
 }
 
 let currentGame = null;
-async function mountGame(g) {
+async function mountGame(g, extra = {}) {
   const el = document.getElementById("game-root");
   el.innerHTML = `<p class="game-loading">${g.emoji} 불러오는 중…</p>`;
   try { await loadScript(g.file); } catch (e) {
@@ -283,13 +295,14 @@ async function mountGame(g) {
   }
   const mod = window.GameModules && window.GameModules[g.id];
   if (currentGame !== g.id || !mod) return;
-  mod.mount(el, { STORE, MENU, won });
+  mod.mount(el, { STORE, MENU, won, ...extra });
 }
 
 function route() {
-  const key = location.hash.slice(1);
+  const [key, query = ""] = location.hash.slice(1).split("?");
   let view = views[key] ? key : "home";
-  const game = key.startsWith("g-") ? GAMES.find(g => g.id === key.slice(2)) : null;
+  const page = PAGES[key] || null;
+  const game = page || (key.startsWith("g-") ? GAMES.find(g => g.id === key.slice(2)) : null);
   if (game) view = "game";
 
   if (observer) observer.disconnect();
@@ -297,12 +310,15 @@ function route() {
   currentGame = null;
 
   app.innerHTML = game
-    ? `${topbar(game.title, "", "#games")}<div id="game-root"></div>`
+    ? `${topbar(game.title, "", page ? "#home" : "#games")}<div id="game-root"></div>`
     : views[view]();
   window.scrollTo(0, 0);
 
   if (view === "menu") setupMenuNav();
-  if (game) { currentGame = game.id; mountGame(game); }
+  if (game) {
+    currentGame = game.id;
+    mountGame(game, page ? { mode: key, params: Object.fromEntries(new URLSearchParams(query)) } : {});
+  }
 }
 
 // 복사 버튼 (와이파이 비밀번호 등)

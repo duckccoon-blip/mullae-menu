@@ -398,7 +398,7 @@ ${EVOLVE_AT}번 먹으면 진화해요! ${HUNGRY_DAYS}일 굶으면 홀쭉, ${FA
         batch.update(F.doc(db, "pets", p.id), { lastFed: F.serverTimestamp(), revives: (p.revives || 0) + 1, reviveTicket: tid });
         await batch.commit();
         p.lastFed = Date.now(); p.revives = (p.revives || 0) + 1;
-        paint(`<div class="pe-wrap" style="text-align:center"><div class="pe-pop">${face(p, true)}</div><h2 class="pe-h">${esc(nameOf(p))} 부활!</h2><p class="pe-sub">다시 만나서 반가워요 🥹\n이번엔 밥 잘 챙겨줘요!</p><button class="pe-btn primary" id="pe-home">내 친구들 보기</button></div>`);
+        paint(`<div class="pe-wrap" style="text-align:center"><div class="pe-pop">${face(p, true)}</div><h2 class="pe-h">${esc(nameOf(p))} 부활!</h2><p class="pe-sub">다시 만나서 반가워요 😭\n이번엔 밥 잘 챙겨줘요!</p><button class="pe-btn primary" id="pe-home">내 친구들 보기</button></div>`);
         $("#pe-home").onclick = () => showHome();
       } catch (e) {
         $("#pe-msg").textContent = "부활에 실패했어요. 이미 사용된 QR일 수 있어요";
@@ -459,7 +459,7 @@ ${EVOLVE_AT}번 먹으면 진화해요! ${HUNGRY_DAYS}일 굶으면 홀쭉, ${FA
     if (u && !u.isAnonymous && await isAdmin(u)) return onReady(u);
     paint(`
       <div class="pe-wrap">
-        <div class="pe-egg" style="animation:none;font-size:64px;margin:20px 0 6px">🧑‍🍳</div>
+        <div class="pe-egg" style="animation:none;font-size:64px;margin:20px 0 6px">🎫</div>
         <h2 class="pe-h">${esc(title)}</h2>
         <p class="pe-sub">직원 계정으로 로그인해 주세요\n(이 기기에서 한 번만 하면 계속 유지돼요)</p>
         <div class="pe-card">
